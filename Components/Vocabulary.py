@@ -8,7 +8,7 @@ class API:
         self._url = url + language
 
     def getToken(self):
-        with open("token.json", "r") as file:
+        with open("./Data/token.json", "r") as file:
             token = json.load(file)
         data = {
             "app_id": token[0]["app_id"],
@@ -29,8 +29,7 @@ class API:
             return definition
 
         else:
-            print("Error: ", response.status_code, response.reason)
-            exit()
+            return False
 
 
 class Vocabulary:
@@ -39,7 +38,7 @@ class Vocabulary:
         self.api = API()
 
     def word_exists(self, word):
-        with open("data.json", "r") as file:
+        with open("./Data/data.json", "r") as file:
             data = json.loads(file.read())
         for i in data:
             if i["word"] == word:
@@ -48,32 +47,42 @@ class Vocabulary:
 
     def add_word(self, word):
         word = word.lower()
-        if os.path.exists("data.json"):
+        if os.path.exists("./Data/data.json"):
             if not self.word_exists(word):
-                with open("data.json", "r") as file:
+                with open("./Data/data.json", "r") as file:
                     js = json.loads(file.read())
-                data = {
-                    "word": word,
-                    "definition": self.api.definition(word)
-                }
-                js.append(data)
-                with open("data.json", "w") as file:
-                    file.write(json.dumps(js, indent=4))
-                print(
-                    "\nWord added: {} - {}\n".format(word, self.api.definition(word))
-                )
+                definition = self.api.definition(word)
+                if definition:
+                    js.append({"word": word, "definition": definition})
+                    with open("./Data/data.json", "w") as file:
+                        file.write(json.dumps(js, indent=4))
+                    print("\nWord added: {} - {}\n".format(word, self.api.definition(word)))
+                else:
+                    print("\nWord not found: {}\n".format(word))
             else:
                 print("Word already exists")
         else:
-            with open("data.json", "w") as file:
+            with open("./Data/data.json", "w") as file:
                 data = []
                 file.write(json.dumps(data, indent=4))
 
     def delete_word(self, word):
-        pass
+        with open("./Data/data.json", "r") as file:
+            data = json.loads(file.read())
+        for i in data:
+            if i["word"] == word:
+                data.remove(i)
+                with open("./Data/data.json", "w") as file:
+                    file.write(json.dumps(data, indent=4))
+                print("Word deleted")
+
+    def get_all(self, letter=None):
+        with open("./Data/data.json", "r") as file:
+            data = json.loads(file.read())
+        return data
 
     def show_all(self, letter=None):
-        with open("data.json", "r") as file:
+        with open("./Data/data.json", "r") as file:
             data = json.loads(file.read())
         for i in data:
             print("{} - {}".format(i["word"], i["definition"]))
@@ -82,7 +91,7 @@ class Vocabulary:
     def search_word(self, word):
         word = word.lower()
         if self.word_exists(word):
-            with open("data.json", "r") as file:
+            with open("./Data/data.json", "r") as file:
                 data = json.loads(file.read())
             for i in data:
                 if i["word"] == word:
@@ -119,7 +128,7 @@ class Menu(Vocabulary):
                 self.show_all()
             elif choice == "4":
                 word = input("Enter word: ")
-                print(self.search_word(word))
+                print("Definición:\n{}".format(self.search_word(word)))
             elif choice == "5":
                 break
             else:
