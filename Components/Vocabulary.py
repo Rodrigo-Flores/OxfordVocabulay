@@ -1,11 +1,13 @@
 import os
 import json
+from textwrap import indent
+from traceback import format_list
 import requests
 
 
 class API:
-    def __init__(self, url="https://od-api.oxforddictionaries.com/api/v2/entries/", language="es/"):
-        self._url = url + language
+    def __init__(self, url="https://od-api.oxforddictionaries.com/api/v2/entries/", language="es"):
+        self._url = url + language + "/"
 
     def getToken(self):
         with open("./Data/token.json", "r") as file:
@@ -25,8 +27,10 @@ class API:
 
         if response.status_code == 200:
             json_response = response.json()
-            definition = json_response["results"][0]["lexicalEntries"][0]["entries"][0]["senses"][0]["definitions"][0]
-            return definition
+            definitions = json_response["results"][0]["lexicalEntries"][0]["entries"][0]["senses"]
+            definitions = [i["definitions"] for i in definitions]
+
+            return definitions
 
         else:
             return False
@@ -45,6 +49,13 @@ class Vocabulary:
                 return True
         return False
 
+    def format_list(self, words, indent=""):
+        result = ""
+        for i in range(len(words)):
+            result += indent + f"{i + 1}: " + words[i][0] + "\n"
+
+        return result
+
     def add_word(self, word):
         word = word.lower()
         if os.path.exists("./Data/data.json"):
@@ -56,7 +67,7 @@ class Vocabulary:
                     js.append({"word": word, "definition": definition})
                     with open("./Data/data.json", "w") as file:
                         file.write(json.dumps(js, indent=4))
-                    print("\nWord added: {} - {}\n".format(word, self.api.definition(word)))
+                    print(f"\nWord Succesfully Added:\n{self.format_list(definition)}")
                 else:
                     print("\nWord not found: {}\n".format(word))
             else:
@@ -65,6 +76,7 @@ class Vocabulary:
             with open("./Data/data.json", "w") as file:
                 data = []
                 file.write(json.dumps(data, indent=4))
+            self.add_word(word)
 
     def delete_word(self, word):
         with open("./Data/data.json", "r") as file:
@@ -85,8 +97,10 @@ class Vocabulary:
         with open("./Data/data.json", "r") as file:
             data = json.loads(file.read())
         for i in data:
-            print("{} - {}".format(i["word"], i["definition"]))
-            print("-" * 20)
+            print(i['word'])
+            print(self.format_list(i["definition"], indent="    - "))
+            print(" - " * 20)
+            
 
     def search_word(self, word):
         word = word.lower()
@@ -95,7 +109,7 @@ class Vocabulary:
                 data = json.loads(file.read())
             for i in data:
                 if i["word"] == word:
-                    return i["definition"]
+                    return self.format_list(i["definition"])
         else:
             return "Word not found"
 
